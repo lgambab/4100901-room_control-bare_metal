@@ -24,11 +24,14 @@ set(linker_script_SRC ${linker_script_SRC}
 set(sources_SRCS ${sources_SRCS}
     
 	#${CMAKE_CURRENT_SOURCE_DIR}/Src/workshop.s #Elimina el main para no ser ejecutado
-	#${CMAKE_CURRENT_SOURCE_DIR}/Src/workshop.c
+	${CMAKE_CURRENT_SOURCE_DIR}/Src/workshop.c
 	${CMAKE_CURRENT_SOURCE_DIR}/Src/main.c
 	${CMAKE_CURRENT_SOURCE_DIR}/Src/syscall.c
 	${CMAKE_CURRENT_SOURCE_DIR}/Src/sysmem.c
 	${CMAKE_CURRENT_SOURCE_DIR}/Startup/startup_stm32l476rgtx.s
+	${CMAKE_CURRENT_SOURCE_DIR}/Src/rcc.c
+	${CMAKE_CURRENT_SOURCE_DIR}/Src/systick.c
+	${CMAKE_CURRENT_SOURCE_DIR}/Src/gpio.c
 )
 
 # Include directories
