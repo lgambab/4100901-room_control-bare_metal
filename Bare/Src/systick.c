@@ -5,8 +5,8 @@
 #define SYST_RVR    (*(volatile uint32_t *)(SYST_BASE + 0x04U)) // Valor de recarga
 #define HSI_FREQ    4000000U                                   // Reloj interno 4 MHz
 
-void init_systick(void);
+void init_systick(void)
 {
-    SYST_RVR = HSI_FREQ - 1;                      // Recarga = 4000000 - 1
+    SYST_RVR = HSI_FREQ / 1000 - 1;               // Recarga = 4000 - 1 (para 1ms)
     SYST_CSR = (1 << 0) | (1 << 1) | (1 << 2);    // ENABLE|TICKINT|CLKSOURCE
 }
