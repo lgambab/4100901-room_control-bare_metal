@@ -1,0 +1,5 @@
+# ninja log v5
+45	200	7814758084969464	CMakeFiles/UART_profesor.dir/Startup/startup_stm32l476rgtx.s.obj	87f50567fdc71d4f
+8	292	7814758085887039	CMakeFiles/UART_profesor.dir/Src/main.c.obj	84828dda8a53be37
+32	299	7814758085966808	CMakeFiles/UART_profesor.dir/Src/sysmem.c.obj	c8f34eda107302a1
+21	425	7814758087233419	CMakeFiles/UART_profesor.dir/Src/syscall.c.obj	cca4ca76c01f1cb3
