@@ -171,4 +171,4 @@ Con esta explicación, deberías comprender cómo funciona el código a nivel de
 
 ---
 
-Continúa con [WORKSHOP.md](3_WORKSHOP_ASM.md) para ejercitar lo aprendido acerca del procesador y lenguaje ensamblador.
+Continúa con [WORKSHOP_ASM.md](3_WORKSHOP_ASM.md) para ejercitar lo aprendido acerca del procesador y lenguaje ensamblador.

@@ -9,10 +9,10 @@ Configurar el **Systick** con el reloj por defecto (4 MHz) para generar una in
 
 ### 1. Descripción del programa existente
 
-1. **init_gpio** configura **PA5** como salida push-pull para controlar el LED LD2 [[Ver RM0351](https://www.st.com/resource/en/reference_manual/rm0351-stm32l47xxx-stm32l48xxx-stm32l49xxx-and-stm32l4axxx-advanced-armbased-32bit-mcus-stmicroelectronics.pdf)].
-2. **init_systick** configura para que el Systick interrumpa cada **1 s** (AHB a 4 MHz) [[Ver PM0214](https://www.st.com/resource/en/programming_manual/pm0214-stm32-cortexm4-mcus-and-mpus-programming-manual-stmicroelectronics.pdf)].
-3. En el **SysTick_Handler**, alternar el LED: **toggle_pa5**.  
-4. Usar **macros** (`.equ`) para todas las direcciones y constantes, en lugar de valores literales.
+0. Los macros definen las direcciones de memoria a las que se va a leer y escribir [[Ver RM0351, sección 2.2.2 y tabla 1](https://www.st.com/resource/en/reference_manual/rm0351-stm32l47xxx-stm32l48xxx-stm32l49xxx-and-stm32l4axxx-advanced-armbased-32bit-mcus-stmicroelectronics.pdf)].
+1. **init_gpio** configura **PA5** como salida push-pull para controlar el LED LD2 [[Ver RM0351, secciones 6.4.17 y 8.5.1](https://www.st.com/resource/en/reference_manual/rm0351-stm32l47xxx-stm32l48xxx-stm32l49xxx-and-stm32l4axxx-advanced-armbased-32bit-mcus-stmicroelectronics.pdf)].
+2. **init_systick** configura para que el Systick interrumpa cada **1 s** (AHB a 4 MHz) [[Ver PM0214, Sección 4.5](https://www.st.com/resource/en/programming_manual/pm0214-stm32-cortexm4-mcus-and-mpus-programming-manual-stmicroelectronics.pdf)].
+3. En el **SysTick_Handler**, alternar el LED: **toggle_pa5** [[Ver RM0351, sección 8.5.6](https://www.st.com/resource/en/reference_manual/rm0351-stm32l47xxx-stm32l48xxx-stm32l49xxx-and-stm32l4axxx-advanced-armbased-32bit-mcus-stmicroelectronics.pdf)].  
 
 ---
 
