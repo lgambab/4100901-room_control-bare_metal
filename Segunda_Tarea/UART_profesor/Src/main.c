@@ -4,6 +4,7 @@
 #include "uart.h"
 #include "nvic.h"
 #include "tim.h"
+#include "room_control.h"
 
 // --- Variables Globales ------------------------------------------------------
 static volatile uint32_t ms_counter = 0; // Contador para el SysTick
@@ -44,35 +45,11 @@ int main(void)
 
     // 5. Bucle Principal (Superloop)
     while (1) {
-        // Apagar LED después de 3 segundos (SysTick actualiza ms_counter)
-        if (ms_counter >= 3000) {
-            clear_gpio(GPIOA, 5);
-        }
-        // --- Lógica del bucle suave de PWM  ---
-        if (ms_counter - last_pwm_update_ms >= 50) { // Actualizar cada 50ms
-            last_pwm_update_ms = ms_counter;
+        // Ejecutar la lógica principal del módulo de control de la sala
+        room_control_update();
 
-            pwm_duty_cycle_current += pwm_duty_cycle_direction;
-
-            if (pwm_duty_cycle_current >= 100) {
-                pwm_duty_cycle_current = 100;
-                pwm_duty_cycle_direction = -1; // Cambiar a decrementar
-            } else if (pwm_duty_cycle_current <= 0) {
-                pwm_duty_cycle_current = 0;
-                pwm_duty_cycle_direction = 1;  // Cambiar a incrementar
-            }
-            tim3_ch1_pwm_set_duty_cycle(pwm_duty_cycle_current);
-        }
-
-        // Procesar línea UART recibida por ISR (cuando la bandera lo indique)
-        if (uart_new_line_received) {
-            uart_send_string("Recibido (IRQ): ");
-            uart_send_string(rx_buffer); // Contenido del buffer de la ISR
-            uart_send_string("\r\n");
-            
-            uart_new_line_received = 0; // Limpiar bandera
-            rx_index = 0;               // Resetear índice para próxima línea
-        }
+        // El LED PA5 ya no se apaga aquí, sino dentro de room_control_update o on_button_press/on_uart_receive
+        // if (ms_counter >= 3000) { clear_gpio(GPIOA, 5); } // Antiguo código, ahora manejado por room_control
     }
 }
 
