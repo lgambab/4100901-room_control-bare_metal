@@ -21,7 +21,7 @@ typedef struct {
 
 // Constantes
 #define BAUD_RATE     115200U
-#define HSI_FREQ      16000000U
+#define HSI_FREQ      4000000U
 
 // Prototipos de funciones
 void init_gpio_uart(void);

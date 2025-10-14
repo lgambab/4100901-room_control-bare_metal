@@ -1,6 +1,6 @@
 #include "nvic.h"
 #include "rcc.h"  // Para rcc_syscfg_clock_enable
-
+#include "uart.h"
 static void nvic_enable_irq(uint32_t IRQn)
 {
     NVIC->ISER[IRQn / 32U] |= (1UL << (IRQn % 32U));

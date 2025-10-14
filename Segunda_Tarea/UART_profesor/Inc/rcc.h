@@ -51,3 +51,4 @@ typedef struct {
 
 void rcc_init(void);
 #endif
+void rcc_syscfg_clock_enable(void); // Parte de nvic.c

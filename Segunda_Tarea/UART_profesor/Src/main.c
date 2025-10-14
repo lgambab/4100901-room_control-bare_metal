@@ -1,55 +1,101 @@
 #include "gpio.h"
 #include "systick.h"
 #include "rcc.h"
-#include "uart.h"  // Agregar esta línea
+#include "uart.h"
+#include "nvic.h"
 
-static volatile uint32_t ms_counter = 17;
-static char rx_buffer[256];
-static uint8_t rx_index = 0;
+// --- Variables Globales ------------------------------------------------------
+static volatile uint32_t ms_counter = 0; // Contador para el SysTick
+static char rx_buffer[256];             // Buffer para caracteres UART recibidos por ISR
+static uint8_t rx_index = 0;             // Índice del buffer de recepción
+static volatile uint8_t uart_new_line_received = 0; // Bandera para nueva línea UART
 
-// --- Programa principal ------------------------------------------------------
+// --- Programa Principal ------------------------------------------------------
 int main(void)
 {
-    rcc_init();
-    init_gpio(GPIOA, 5, 0x01, 0x00, 0x01, 0x00, 0x00);
-    init_gpio(GPIOC, 13, 0x00, 0x00, 0x01, 0x01, 0x00);
-    init_systick();
-    init_gpio_uart();  // Agregar inicialización GPIO para UART
-    init_uart();       // Agregar inicialización UART
-    
-    uart_send_string("Sistema Inicializado!\r\n");  // Enviar mensaje de inicio
-    
+    // 1. Inicialización de periféricos
+    rcc_init();                                     // Relojes (GPIOA, GPIOC)
+    init_gpio(GPIOA, 5, 0x01, 0x00, 0x01, 0x00, 0x00); // LED PA5 (Output)
+    init_gpio(GPIOC, 13, 0x00, 0x00, 0x01, 0x01, 0x00); // Botón PC13 (Input)
+    init_systick();                                 // SysTick para ms_counter
+    init_gpio_uart();                               // GPIOs para UART (PA2, PA3)
+    init_uart();                                    // Configuración básica de UART2
+
+    // 2. Configuración de Interrupciones (NVIC y EXTI)
+    nvic_exti_pc13_button_enable();                 // Habilitar IRQ EXTI13 para botón
+    nvic_usart2_irq_enable();                       // Habilitar IRQ RXNE para UART2
+
+    // 3. Configuración de Prioridades de Interrupción (para anidamiento)
+    // Botón (EXTI15_10_IRQn) prioridad 0 (más alta)
+    NVIC->IP[EXTI15_10_IRQn] = 0x00;
+    // UART2 (USART2_IRQn) prioridad 1 (más baja que botón)
+    NVIC->IP[USART2_IRQn]    = 0x10; // (0x10 es el bit 4, el valor real de prioridad)
+
+    // 4. Mensaje de inicio
+    uart_send_string("Sistema Inicializado (NVIC/EXTI/Prioridades)!\r\n");
+
+    // 5. Bucle Principal (Superloop)
     while (1) {
-        if (read_gpio(GPIOC, 13) != 0) { // Botón presionado
-            ms_counter = 0;   // reiniciar el contador de milisegundos
-            set_gpio(GPIOA, 5);        // Encender LED
-        }
-        
-        if (ms_counter >= 3000) { // Si han pasado 3 segundos o más, apagar LED
-            clear_gpio(GPIOA, 5);             // Apagar LED
+        // Apagar LED después de 3 segundos (SysTick actualiza ms_counter)
+        if (ms_counter >= 3000) {
+            clear_gpio(GPIOA, 5);
         }
 
-        // Polling UART receive
-        if (USART2->ISR & (1 << 5)) {  // RXNE
-            char c = (char)(USART2->RDR & 0xFF);
-            if (rx_index < sizeof(rx_buffer) - 1) {
-                rx_buffer[rx_index++] = c;
-                if (c == '\r' || c == '\n') {
-                    rx_buffer[rx_index] = '\0';  // Null terminate
-                    uart_send_string("Recibido: ");
-                    uart_send_string(rx_buffer);
-                    uart_send_string("\r\n");
-                    rx_index = 0;
-                }
-            }
+        // Procesar línea UART recibida por ISR (cuando la bandera lo indique)
+        if (uart_new_line_received) {
+            uart_send_string("Recibido (IRQ): ");
+            uart_send_string(rx_buffer); // Contenido del buffer de la ISR
+            uart_send_string("\r\n");
+            
+            uart_new_line_received = 0; // Limpiar bandera
+            rx_index = 0;               // Resetear índice para próxima línea
         }
     }
 }
 
-// --- Manejador de la interrupción SysTick -----------------------------------
+// --- Manejadores de Interrupción ---------------------------------------------
+
+// ISR de SysTick (cada ms)
 void SysTick_Handler(void)
 {
     ms_counter++;
+}
+
+// ISR para EXTI13 (Botón PC13)
+void EXTI15_10_IRQHandler(void) {
+    if ((EXTI->PR1 & (1U << 13)) != 0) { // Si la interrupción es por EXTI13
+        ms_counter = 0;             // Reiniciar contador al presionar
+        set_gpio(GPIOA, 5);         // Encender LED
+        uart_send_string("Button EXTI IRQ START!\r\n"); // Log de inicio IRQ botón
+
+        // Retraso artificial para demostrar anidamiento (NO PARA PRODUCCIÓN)
+        for(volatile int i=0; i<200000; i++);
+
+        uart_send_string("Button EXTI IRQ END!\r\n");   // Log de fin IRQ botón
+        EXTI->PR1 |= (1U << 13);    // Limpiar flag de interrupción EXTI13
+    }
+}
+
+// ISR para USART2 (Recepción RXNE)
+void USART2_IRQHandler(void) {
+    if ((USART2->ISR & (1U << 5)) != 0) { // Si la interrupción es por RXNE
+        char received_data = (char)(USART2->RDR & 0xFF); // Leer byte para limpiar flag
+
+        set_gpio(GPIOA, 5); // Encender LED brevemente al recibir
+
+        // Almacenar en buffer y verificar fin de línea
+        if (rx_index < sizeof(rx_buffer) - 1) {
+            rx_buffer[rx_index++] = received_data;
+            if (received_data == '\r' || received_data == '\n') {
+                rx_buffer[rx_index] = '\0'; // Null-terminate
+                uart_new_line_received = 1; // Indicar a main que hay una línea completa
+            }
+        } else { // Desbordamiento de buffer
+            rx_index = 0; // Resetear
+            uart_new_line_received = 0;
+            // uart_send_string("UART Buffer Full!\r\n"); // No usar en ISR larga
+        }
+    }
 }
 /*Polling:
 Pros:
