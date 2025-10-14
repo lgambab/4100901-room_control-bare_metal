@@ -2,10 +2,16 @@
 #define ROOM_CONTROL_H
 
 #include <stdint.h>
+typedef enum {
+    ROOM_IDLE,
+    ROOM_OCCUPIED
+} RoomState_t; // Usamos RoomState_t para consistencia con el main.c anterior
 
 // Constantes
-#define LED_TIMEOUT_MS 3000  // Tiempo para apagar LED después de presionar botón
-#define PWM_INITIAL_DUTY 50  // Duty cycle inicial para PWM LED
+#define LED_TIMEOUT_MS          3000 // Timeout para apagar LED en estado OCCUPIED
+#define DEBOUNCE_TIME_MS        100  // Tiempo de anti-rebote para el botón
+#define PWM_INITIAL_DUTY        0    // Duty cycle inicial del PWM (0% apagado)
+#define HEARTBEAT_INTERVAL_MS   500  // Intervalo del heartbeat
 
 /**
  * @brief Función a ser llamada por EXTI15_10_IRQHandler cuando se detecta
@@ -30,5 +36,10 @@ void room_control_app_init(void);
  *        Maneja timeouts, transiciones automáticas, etc.
  */
 void room_control_update(void);
+// Declaraciones de variables globales (para que main.c pueda acceder a ellas)
+extern volatile RoomState_t current_state;
+extern volatile uint32_t last_button_press_time_ms; // Unificada
+extern volatile uint32_t last_button_event_time_ms; // Para anti-rebote
+extern volatile uint32_t last_heartbeat_toggle_ms;  // Para el heartbeat
 
 #endif // ROOM_CONTROL_H

@@ -4,52 +4,57 @@
 #include "uart.h"
 #include "nvic.h"
 #include "tim.h"
-#include "room_control.h"
+#include "room_control.h" // Incluimos el header unificado
+#include <string.h>       // Para usar strcmp
 
-// --- Variables Globales ------------------------------------------------------
-static volatile uint32_t ms_counter = 0; // Contador para el SysTick
+// --- Variables Globales de main.c ---
+volatile uint32_t ms_counter = 0; // Contador para el SysTick (NO static para que room_control pueda acceder)
 static char rx_buffer[256];             // Buffer para caracteres UART recibidos por ISR
 static uint8_t rx_index = 0;             // Índice del buffer de recepción
 static volatile uint8_t uart_new_line_received = 0; // Bandera para nueva línea UART
-// --- Variables Globales para PWM Suave ---------------------------------------
-static int8_t pwm_duty_cycle_current = 0; // Duty cycle actual
-static int8_t pwm_duty_cycle_direction = 1; // 1: aumentando, -1: disminuyendo
-static uint32_t last_pwm_update_ms = 0; // Para controlar la frecuencia de actualización del PWM
 
 // --- Programa Principal ------------------------------------------------------
 int main(void)
 {
     // 1. Inicialización de periféricos
-    rcc_init();                                     // Relojes (GPIOA, GPIOC)
+    rcc_init();
     init_gpio(GPIOA, 5, 0x01, 0x00, 0x01, 0x00, 0x00); // LED PA5 (Output)
     init_gpio(GPIOC, 13, 0x00, 0x00, 0x01, 0x01, 0x00); // Botón PC13 (Input)
-    init_systick();                                 // SysTick para ms_counter
-    init_gpio_uart();                               // GPIOs para UART (PA2, PA3)
-    init_uart();                                    // Configuración básica de UART2
-    tim3_ch1_pwm_init(1000);                        // Inicializar TIM3_CH1 para PWM con 1 kHz
-    tim3_ch1_pwm_set_duty_cycle(10); // Establecer el 10%
-    // tim3_ch1_pwm_set_duty_cycle(25); // O el 25%
-    // tim3_ch1_pwm_set_duty_cycle(75); // O el 75%
+    init_systick();
+    init_gpio_uart();
+    init_uart();
+
+    // Ahora room_control_app_init() se encarga del PWM y del estado inicial
+    room_control_app_init();
+
     // 2. Configuración de Interrupciones (NVIC y EXTI)
-    nvic_exti_pc13_button_enable();                 // Habilitar IRQ EXTI13 para botón
-    nvic_usart2_irq_enable();                       // Habilitar IRQ RXNE para UART2
+    nvic_exti_pc13_button_enable();
+    nvic_usart2_irq_enable();
 
-    // 3. Configuración de Prioridades de Interrupción (para anidamiento)
-    // Botón (EXTI15_10_IRQn) prioridad 0 (más alta)
-    NVIC->IP[EXTI15_10_IRQn] = 0x00;
-    // UART2 (USART2_IRQn) prioridad 1 (más baja que botón)
-    NVIC->IP[USART2_IRQn]    = 0x10; // (0x10 es el bit 4, el valor real de prioridad)
+    // 3. Configuración de Prioridades de Interrupción
+    NVIC->IP[EXTI15_10_IRQn] = 0x00; // Prioridad más alta para el botón
+    NVIC->IP[USART2_IRQn]    = 0x10; // Prioridad más baja para UART
 
-    // 4. Mensaje de inicio
-    uart_send_string("Sistema Inicializado (NVIC/EXTI/Prioridades)!\r\n");
+    // 4. Mensaje de inicio (ya lo hace room_control_app_init)
+    // uart_send_string("Sistema de Control de Sala Iniciado!\r\n");
 
     // 5. Bucle Principal (Superloop)
     while (1) {
-        // Ejecutar la lógica principal del módulo de control de la sala
+        // Llama a la función de control de la sala en cada iteración
         room_control_update();
 
-        // El LED PA5 ya no se apaga aquí, sino dentro de room_control_update o on_button_press/on_uart_receive
-        // if (ms_counter >= 3000) { clear_gpio(GPIOA, 5); } // Antiguo código, ahora manejado por room_control
+        // Procesar comandos UART si se recibe una línea completa
+        if (uart_new_line_received) {
+            uart_new_line_received = 0; // Limpiar la bandera
+            // Procesar cada caracter de la línea recibida
+            for (int i = 0; i < rx_index; i++) {
+                // Solo procesamos caracteres "válidos", ignoramos '\r' y '\n' aquí
+                if (rx_buffer[i] != '\r' && rx_buffer[i] != '\n' && rx_buffer[i] != '\0') {
+                    room_control_on_uart_receive(rx_buffer[i]);
+                }
+            }
+            rx_index = 0; // Resetear el índice del buffer para la próxima recepción
+        }
     }
 }
 
@@ -58,30 +63,29 @@ int main(void)
 // ISR de SysTick (cada ms)
 void SysTick_Handler(void)
 {
-    ms_counter++;
+    ms_counter++; // Incrementa el contador global
+    room_control_heartbeat_update(); // Llama a la nueva función de heartbeat
 }
 
 // ISR para EXTI13 (Botón PC13)
 void EXTI15_10_IRQHandler(void) {
-    if ((EXTI->PR1 & (1U << 13)) != 0) { // Si la interrupción es por EXTI13
-        ms_counter = 0;             // Reiniciar contador al presionar
-        set_gpio(GPIOA, 5);         // Encender LED
-        uart_send_string("Button EXTI IRQ START!\r\n"); // Log de inicio IRQ botón
+    if ((EXTI->PR1 & (1U << 13)) != 0) {
+        // Llama a la función de control de la sala para manejar la pulsación
+        room_control_on_button_press();
 
-        // Retraso artificial para demostrar anidamiento (NO PARA PRODUCCIÓN)
-        for(volatile int i=0; i<200000; i++);
+        // El retraso artificial aquí no debería estar en un ISR real.
+        // uart_send_string("Button EXTI IRQ START!\r\n"); // Ya lo maneja room_control
+        // for(volatile int i=0; i<200000; i++);
+        // uart_send_string("Button EXTI IRQ END!\r\n");   // Ya lo maneja room_control
 
-        uart_send_string("Button EXTI IRQ END!\r\n");   // Log de fin IRQ botón
-        EXTI->PR1 |= (1U << 13);    // Limpiar flag de interrupción EXTI13
+        EXTI->PR1 |= (1U << 13);
     }
 }
 
 // ISR para USART2 (Recepción RXNE)
 void USART2_IRQHandler(void) {
-    if ((USART2->ISR & (1U << 5)) != 0) { // Si la interrupción es por RXNE
-        char received_data = (char)(USART2->RDR & 0xFF); // Leer byte para limpiar flag
-
-        set_gpio(GPIOA, 5); // Encender LED brevemente al recibir
+    if ((USART2->ISR & (1U << 5)) != 0) {
+        char received_data = (char)(USART2->RDR & 0xFF);
 
         // Almacenar en buffer y verificar fin de línea
         if (rx_index < sizeof(rx_buffer) - 1) {

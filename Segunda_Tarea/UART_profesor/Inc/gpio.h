@@ -53,4 +53,5 @@ void init_gpio(GPIO_Typedef_t * GPIO, uint8_t pin, uint8_t mode, uint8_t type, u
 void set_gpio(GPIO_Typedef_t * GPIO, uint8_t pin);
 void clear_gpio(GPIO_Typedef_t * GPIO, uint8_t pin);
 uint8_t read_gpio(GPIO_Typedef_t * GPIO, uint8_t pin);
+void gpio_setup_pin(GPIO_Typedef_t *GPIOx, uint8_t pin, uint8_t mode, uint8_t af);
 #endif
