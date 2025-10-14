@@ -10,3 +10,7 @@ void rcc_init(void)
 void rcc_syscfg_clock_enable(void) {
     RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN; // Habilita el reloj para SYSCFG
 }
+void rcc_tim3_clock_enable(void) {
+    // TIM3EN está en el bit 1 del registro APB1ENR1
+    RCC->APB1ENR1 |= (1U << 1); // Habilita el reloj para TIM3
+}

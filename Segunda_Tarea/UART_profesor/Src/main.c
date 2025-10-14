@@ -3,12 +3,17 @@
 #include "rcc.h"
 #include "uart.h"
 #include "nvic.h"
+#include "tim.h"
 
 // --- Variables Globales ------------------------------------------------------
 static volatile uint32_t ms_counter = 0; // Contador para el SysTick
 static char rx_buffer[256];             // Buffer para caracteres UART recibidos por ISR
 static uint8_t rx_index = 0;             // Índice del buffer de recepción
 static volatile uint8_t uart_new_line_received = 0; // Bandera para nueva línea UART
+// --- Variables Globales para PWM Suave ---------------------------------------
+static int8_t pwm_duty_cycle_current = 0; // Duty cycle actual
+static int8_t pwm_duty_cycle_direction = 1; // 1: aumentando, -1: disminuyendo
+static uint32_t last_pwm_update_ms = 0; // Para controlar la frecuencia de actualización del PWM
 
 // --- Programa Principal ------------------------------------------------------
 int main(void)
@@ -20,7 +25,10 @@ int main(void)
     init_systick();                                 // SysTick para ms_counter
     init_gpio_uart();                               // GPIOs para UART (PA2, PA3)
     init_uart();                                    // Configuración básica de UART2
-
+    tim3_ch1_pwm_init(1000);                        // Inicializar TIM3_CH1 para PWM con 1 kHz
+    tim3_ch1_pwm_set_duty_cycle(10); // Establecer el 10%
+    // tim3_ch1_pwm_set_duty_cycle(25); // O el 25%
+    // tim3_ch1_pwm_set_duty_cycle(75); // O el 75%
     // 2. Configuración de Interrupciones (NVIC y EXTI)
     nvic_exti_pc13_button_enable();                 // Habilitar IRQ EXTI13 para botón
     nvic_usart2_irq_enable();                       // Habilitar IRQ RXNE para UART2
@@ -39,6 +47,21 @@ int main(void)
         // Apagar LED después de 3 segundos (SysTick actualiza ms_counter)
         if (ms_counter >= 3000) {
             clear_gpio(GPIOA, 5);
+        }
+        // --- Lógica del bucle suave de PWM  ---
+        if (ms_counter - last_pwm_update_ms >= 50) { // Actualizar cada 50ms
+            last_pwm_update_ms = ms_counter;
+
+            pwm_duty_cycle_current += pwm_duty_cycle_direction;
+
+            if (pwm_duty_cycle_current >= 100) {
+                pwm_duty_cycle_current = 100;
+                pwm_duty_cycle_direction = -1; // Cambiar a decrementar
+            } else if (pwm_duty_cycle_current <= 0) {
+                pwm_duty_cycle_current = 0;
+                pwm_duty_cycle_direction = 1;  // Cambiar a incrementar
+            }
+            tim3_ch1_pwm_set_duty_cycle(pwm_duty_cycle_current);
         }
 
         // Procesar línea UART recibida por ISR (cuando la bandera lo indique)

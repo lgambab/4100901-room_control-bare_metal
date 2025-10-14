@@ -31,6 +31,7 @@ set(sources_SRCS ${sources_SRCS}
 	${CMAKE_CURRENT_SOURCE_DIR}/Src/sysmem.c
 	${CMAKE_CURRENT_SOURCE_DIR}/Src/uart.c
 	${CMAKE_CURRENT_SOURCE_DIR}/Src/nvic.c
+	${CMAKE_CURRENT_SOURCE_DIR}/Src/tim.c
 	${CMAKE_CURRENT_SOURCE_DIR}/Startup/startup_stm32l476rgtx.s
 )
 
