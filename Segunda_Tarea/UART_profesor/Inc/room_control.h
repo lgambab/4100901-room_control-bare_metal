@@ -41,5 +41,5 @@ extern volatile RoomState_t current_state;
 extern volatile uint32_t last_button_press_time_ms; // Unificada
 extern volatile uint32_t last_button_event_time_ms; // Para anti-rebote
 extern volatile uint32_t last_heartbeat_toggle_ms;  // Para el heartbeat
-
+void room_control_heartbeat_update(void);
 #endif // ROOM_CONTROL_H

@@ -4,7 +4,7 @@
 #include "uart.h"         // Para enviar mensajes
 #include "tim.h"          // Para controlar el PWM
 #include <string.h>       // Para usar strcmp si se implementan comandos UART complejos
-
+#define HEARTBEAT_INTERVAL_MS 500 // Intervalo del heartbeat
 // --- Variables Globales del Módulo Room Control ---
 volatile RoomState_t current_state = ROOM_IDLE; // Variable de estado global (unificada)
 volatile uint32_t last_button_press_time_ms = 0; // Último tiempo de pulsación para timeout (unificada)
@@ -148,9 +148,24 @@ void room_control_update(void)
         }
     }
 }
+void room_control_heartbeat_update(void) {
+    if (ms_counter - last_heartbeat_toggle_ms >= HEARTBEAT_INTERVAL_MS) {
+        last_heartbeat_toggle_ms = ms_counter;
+
+        if (current_state == ROOM_IDLE) {
+            uart_send_string("Heartbeat: IDLE\r\n");
+            if (read_gpio(GPIOA, 5))
+                clear_gpio(GPIOA, 5);
+            else
+                set_gpio(GPIOA, 5);
+        } else {
+            uart_send_string("Heartbeat: NO IDLE\r\n");
+        }
+    }
+}
 
 // Nueva función para el heartbeat, llamada desde SysTick_Handler
-void room_control_heartbeat_update(void) {
+/*void room_control_heartbeat_update(void) {
     if (ms_counter - last_heartbeat_toggle_ms >= HEARTBEAT_INTERVAL_MS) {
         last_heartbeat_toggle_ms = ms_counter;
 
@@ -163,4 +178,4 @@ void room_control_heartbeat_update(void) {
             }
         }
     }
-}
+}*/

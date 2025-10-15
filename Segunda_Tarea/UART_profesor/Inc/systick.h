@@ -1,6 +1,6 @@
 // systick.h
 #include <stdint.h>
-
+extern volatile uint32_t ms_counter;
 typedef struct {
     volatile uint32_t CSR;   // Control and Status Register
     volatile uint32_t RVR;   // Reload Value Register
@@ -10,5 +10,4 @@ typedef struct {
 
 #define SYSTICK_BASE 0xE000E010U
 #define SYSTICK      ((SYSTICK_Typedef_t *) SYSTICK_BASE)
-
 void init_systick(void);

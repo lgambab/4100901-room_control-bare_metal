@@ -10,8 +10,7 @@
 volatile uint8_t button_event = 0;
 volatile char uart_event_char = 0;
 
-// Contador de milisegundos del sistema
-volatile uint32_t system_ms_counter = 0;
+volatile uint32_t ms_counter = 0; // Contador de milisegundos
 
 // Función local para inicializar periféricos
 static void peripherals_init(void)
@@ -24,8 +23,9 @@ static void peripherals_init(void)
     init_gpio(GPIOC, 13, 0x00, 0x00, 0x01, 0x01, 0x00, 0); // Botón PC13 (Input)
 
     // Inicialización de periféricos
-    systick_init();
-    uart_init();  // Asumiendo función unificada
+    init_systick();
+    init_gpio_uart();
+    init_uart();  // Asumiendo función unificada
     nvic_exti_pc13_button_enable();
     nvic_usart2_irq_enable();
     tim3_ch1_pwm_init(1000);  // 1 kHz PWM
@@ -36,7 +36,6 @@ int main(void)
     peripherals_init();
     room_control_app_init();
     uart_send_string("Sistema de Control de Sala Inicializado!\r\n");
-
     // Bucle principal: procesa eventos
     while (1) {
         if (button_event) {
@@ -54,11 +53,13 @@ int main(void)
 }
 
 // Manejador de SysTick
+
+
 void SysTick_Handler(void)
 {
-    system_ms_counter++;
+    ms_counter++;
+   room_control_heartbeat_update();   // LED encendido
 }
-
 // Manejadores de interrupciones
 void EXTI15_10_IRQHandler(void)
 {
