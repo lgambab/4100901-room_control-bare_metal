@@ -44,12 +44,31 @@ typedef struct {
 #define GPIOH_BASE  0x48001C00U
 #define GPIOH       ((GPIO_Typedef_t *) GPIOH_BASE)
 
+// (agregamos diferentes modos para teminar de completar la libreria)Modos GPIO (Input, Output, Alternate Function, Analog)
+#define GPIO_MODE_INPUT     0x00U
+#define GPIO_MODE_OUT  PUT    0x01U
+#define GPIO_MODE_AF        0x02U
+#define GPIO_MODE_ANALOG    0x03U
 
+// Output Type (Push-pull / Open-drain)
+#define GPIO_TYPE_PP        0x00U
+#define GPIO_TYPE_OD        0x01U
+
+// Output Speed
+#define GPIO_SPEED_LOW      0x00U
+#define GPIO_SPEED_MEDIUM   0x01U
+#define GPIO_SPEED_HIGH     0x02U
+#define GPIO_SPEED_VERY_HIGH 0x03U
+
+// Pull-up / Pull-down
+#define GPIO_PUPD_NONE      0x00U
+#define GPIO_PUPD_PU        0x01U
+#define GPIO_PUPD_PD        0x02U
 #define LD2_PIN     5U                                         // Pin PA5 (LED)
 #define B1_PIN      13U   
 
-void init_gpio(GPIO_Typedef_t * GPIO, uint8_t pin, uint8_t mode, uint8_t type, uint8_t speed, uint8_t pupd, uint8_t initial_value);
-
+void init_gpio(GPIO_Typedef_t * GPIO, uint8_t pin, uint8_t mode, uint8_t type, uint8_t speed, uint8_t pupd, uint8_t initial_value, uint8_t af_num);
+// Modificamos el prototipo para reflejar la necesidad del AF
 void set_gpio(GPIO_Typedef_t * GPIO, uint8_t pin);
 void clear_gpio(GPIO_Typedef_t * GPIO, uint8_t pin);
 uint8_t read_gpio(GPIO_Typedef_t * GPIO, uint8_t pin);

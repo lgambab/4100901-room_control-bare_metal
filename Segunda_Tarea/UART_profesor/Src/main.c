@@ -20,8 +20,8 @@ static void peripherals_init(void)
     rcc_init();
 
     // Configuración de GPIOs
-    init_gpio(GPIOA, 5, 0x01, 0x00, 0x01, 0x00, 0x00); // LED PA5 (Output)
-    init_gpio(GPIOC, 13, 0x00, 0x00, 0x01, 0x01, 0x00); // Botón PC13 (Input)
+    init_gpio(GPIOA, 5, 0x01, 0x00, 0x01, 0x00, 0x00, 0); // LED PA5 (Output)
+    init_gpio(GPIOC, 13, 0x00, 0x00, 0x01, 0x01, 0x00, 0); // Botón PC13 (Input)
 
     // Inicialización de periféricos
     systick_init();
