@@ -19,7 +19,7 @@ void room_control_app_init(void)
 {
     // Inicializar el periférico TIM3 para PWM
     tim3_ch1_pwm_init(1000); // 1 kHz PWM
-    tim3_ch1_pwm_set_duty_cycle(PWM_INITIAL_DUTY); // Establecer el duty cycle inicial (0%)
+    tim3_ch1_pwm_set_duty_cycle(0); // Establecer el duty cycle inicial (0%)
 
     // Inicializar el LED PA5 (si se usa independientemente del PWM)
     clear_gpio(GPIOA, 5); // Asegurar que PA5 esté apagado inicialmente
